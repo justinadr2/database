@@ -1,6 +1,6 @@
 
 ### Commands so far
-`insert <name>, <age>`
+`insert <name> <age>`
 
 `print`
 

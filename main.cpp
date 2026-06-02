@@ -2,18 +2,24 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-
+#include <string>
 using namespace std;
 
-const string datafile = "data.data";
+const string datafile = "data.base";
 
-void Print(const vector<vector<string>>& table)
+struct Record
+{
+    string name;
+    unsigned int age;
+};
+
+void Print(const vector<Record>& table)
 {
     cout << "(name, age)\n";
 
-    for (const auto& row : table)
+    for (Record row : table)
     {
-        cout << row[0] << ", " << row[1] << '\n';
+        cout << row.name << ", " << to_string(row.age) << '\n';
     }
 }
 
@@ -25,38 +31,48 @@ vector<string> ScanInput(const string& command)
     string word;
 
     while (buffer >> word)
+    {
         line.push_back(word);
+    }
 
     return line;
 }
 
-void Insert(const vector<string>& data)
+void Insert(Record& data)
 {
     ofstream file(datafile, ios::app);
 
-    file << data[1] << ", " << data[2] << '\n';
+    file << data.name << ", " << data.age << '\n';
 }
 
-vector<vector<string>> Parse()
+vector<Record> Parse()
 {
-    vector<vector<string>> table;
+    vector<Record> table;
     ifstream file(datafile);
 
     string line;
+    // skip header
     getline(file, line);
 
     while (getline(file, line))
     {
         stringstream buffer(line);
         string name, age;
+        Record record;
 
         getline(buffer, name, ',');
         getline(buffer, age);
 
-        if (!age.empty() && age[0] == ' ')
-            age.erase(0, 1);
-
-        table.push_back({ name, age });
+        record.name = name;
+        try 
+        {
+            record.age = stoi(age);
+            table.push_back(record);
+        }
+        catch (const invalid_argument& e) 
+        {
+            cout << "Warning: skipping corrupted record for '" << name << "'\n";
+        }
     }
 
     return table;
@@ -64,6 +80,7 @@ vector<vector<string>> Parse()
 
 int main()
 {
+    vector<Record> database = Parse();
     string command;
     
     while (true)
@@ -73,25 +90,23 @@ int main()
 
         if (command == "print")
         {
-            vector<vector<string>> table = Parse();
-            Print(table);
+            Print(database);
             continue;
         }
 
         else if (command == "exit")
             break;
 
-        vector<string> tokens = ScanInput(command);
+        vector<string> params = ScanInput(command);
 
-        if (tokens[0] == "insert")
+        if (params[0] == "insert")
         {
-            string name = tokens[1];
-            string age  = tokens[2];
+            Record record;
+            record.name = params[1];
+            record.age  = stoi(params[2]);
 
-            if (!name.empty() && name.back() == ',')
-                name.pop_back();
-
-            Insert({ "", name, age });
+            database.push_back(record);
+            Insert(record);
         }
     }
 }
